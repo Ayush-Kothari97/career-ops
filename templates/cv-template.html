@@ -497,7 +497,11 @@
 <body>
 <div class="page">
 
-  <!-- HEADER -->
+  <!-- HEADER
+       {{PORTFOLIO_LINK}} — if profile has a portfolio_url, fill with:
+         <span class="separator">|</span><a href="URL">Display Text</a>
+         otherwise leave empty string.
+  -->
   <div class="header avoid-break">
     <h1>{{NAME}}</h1>
     <div class="header-rule"></div>
@@ -509,8 +513,7 @@
       <span>{{EMAIL}}</span>
       <span class="separator">|</span>
       <a href="{{LINKEDIN_URL}}">{{LINKEDIN_DISPLAY}}</a>
-      {{#if PORTFOLIO_URL}}<span class="separator">|</span>
-      <a href="{{PORTFOLIO_URL}}">{{PORTFOLIO_DISPLAY}}</a>{{/if}}
+      {{PORTFOLIO_LINK}}
     </div>
   </div>
 
