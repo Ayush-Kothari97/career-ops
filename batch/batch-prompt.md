@@ -288,8 +288,7 @@ node generate-pdf.mjs \
 | `{{EMAIL}}` | (from profile.yml) |
 | `{{LINKEDIN_URL}}` | (from profile.yml) |
 | `{{LINKEDIN_DISPLAY}}` | (from profile.yml) |
-| `{{PORTFOLIO_URL}}` | (from profile.yml) |
-| `{{PORTFOLIO_DISPLAY}}` | (from profile.yml) |
+| `{{PORTFOLIO_LINK}}` | If `portfolio_url` set: `<span class="separator">\|</span><a href="URL">Display</a>`; else empty string |
 | `{{LOCATION}}` | (from profile.yml) |
 | `{{SECTION_SUMMARY}}` | Professional Summary / Resumen Profesional |
 | `{{SUMMARY_TEXT}}` | Summary personalizado con keywords |
