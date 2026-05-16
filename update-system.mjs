@@ -27,6 +27,17 @@ const CANONICAL_REPO = 'https://github.com/santifer/career-ops.git';
 const RAW_VERSION_URL = 'https://raw.githubusercontent.com/santifer/career-ops/main/VERSION';
 const RELEASES_API = 'https://api.github.com/repos/santifer/career-ops/releases/latest';
 
+// Paths removed from the system layer in past versions.
+// apply() deletes these from local installations so stale files don't linger.
+const REMOVED_PATHS = [
+  'modes/de/',
+  'modes/fr/',
+  'modes/ja/',
+  'modes/pt/',
+  'modes/ru/',
+  'modes/tr/',
+];
+
 // System layer paths — ONLY these files get updated
 const SYSTEM_PATHS = [
   'modes/_shared.md',
@@ -296,6 +307,26 @@ async function apply() {
         updated.push(path);
       } catch {
         // File may not exist in remote (new additions), skip
+      }
+    }
+
+    // 3b. Remove paths that were deleted from the system layer in past versions.
+    for (const path of REMOVED_PATHS) {
+      const pathspec = path.endsWith('/') ? path.slice(0, -1) : path;
+      const localPath = join(ROOT, pathspec);
+      const exists = existsSync(localPath);
+      if (!exists) continue;
+      try {
+        git('rm', '-r', '-f', '--ignore-unmatch', '--', pathspec);
+        updated.push(path);
+      } catch {
+        // Not tracked by git — remove from disk only
+        try {
+          rmSync(localPath, { recursive: true, force: true });
+          updated.push(path);
+        } catch {
+          // Already gone
+        }
       }
     }
 
