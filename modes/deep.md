@@ -10,8 +10,8 @@ language in this order:
 1. **User prompt language** — if the user wrote `/career-ops deep` (or its
    surrounding chat) in Spanish, French, German, Japanese, etc., emit the
    doc in that language.
-2. **`config/profile.yml`** — if `language.modes_dir` is set
-   (`modes/de`, `modes/fr`, `modes/ja`), prefer that locale.
+2. **`config/profile.yml`** — if `language.locale` is set (e.g., `de`, `fr`, `ja`),
+   prefer that locale for output.
 3. **JD language** — only as a last resort, when the user prompt has no
    language signal (e.g., a bare URL with no surrounding chat).
 

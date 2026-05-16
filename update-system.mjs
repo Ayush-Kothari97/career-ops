@@ -27,6 +27,17 @@ const CANONICAL_REPO = 'https://github.com/santifer/career-ops.git';
 const RAW_VERSION_URL = 'https://raw.githubusercontent.com/santifer/career-ops/main/VERSION';
 const RELEASES_API = 'https://api.github.com/repos/santifer/career-ops/releases/latest';
 
+// Paths removed from the system layer in past versions.
+// apply() deletes these from local installations so stale files don't linger.
+const REMOVED_PATHS = [
+  'modes/de/',
+  'modes/fr/',
+  'modes/ja/',
+  'modes/pt/',
+  'modes/ru/',
+  'modes/tr/',
+];
+
 // System layer paths — ONLY these files get updated
 const SYSTEM_PATHS = [
   'modes/_shared.md',
@@ -45,11 +56,6 @@ const SYSTEM_PATHS = [
   'modes/tracker.md',
   'modes/training.md',
   'modes/latex.md',
-  'modes/de/',
-  'modes/fr/',
-  'modes/ja/',
-  'modes/pt/',
-  'modes/ru/',
   'CLAUDE.md',
   'AGENTS.md',
   'GEMINI.md',
@@ -304,6 +310,28 @@ async function apply() {
       }
     }
 
+    // 3b. Remove paths that were deleted from the system layer in past versions.
+    // `git rm` already stages these deletions — do NOT push to `updated` or they
+    // will be re-passed to addPaths() below, which fails on missing paths (exit 128).
+    const removedPaths = [];
+    for (const path of REMOVED_PATHS) {
+      const pathspec = path.endsWith('/') ? path.slice(0, -1) : path;
+      const localPath = join(ROOT, pathspec);
+      if (!existsSync(localPath)) continue;
+      try {
+        git('rm', '-r', '-f', '--ignore-unmatch', '--', pathspec);
+        removedPaths.push(pathspec);
+      } catch {
+        // Not tracked by git — remove from disk only
+        try {
+          rmSync(localPath, { recursive: true, force: true });
+          removedPaths.push(pathspec);
+        } catch {
+          // Already gone
+        }
+      }
+    }
+
     // 4. Validate: check NO user files were touched.
     //
     // Track which user paths the update unexpectedly touched so we
@@ -391,6 +419,7 @@ async function apply() {
 
     console.log(`\nUpdate complete: v${local} → v${remote}`);
     console.log(`Updated ${updated.length} system paths.`);
+    if (removedPaths.length > 0) console.log(`Removed ${removedPaths.length} deprecated path(s): ${removedPaths.join(', ')}`);
     console.log(`Rollback available: node update-system.mjs rollback`);
 
   } finally {
@@ -459,6 +488,17 @@ function rollback() {
           // Already gone, or not present on disk — fine.
         }
         removed.push(pathspec);
+      }
+    }
+
+    // Restore paths removed by this version if they existed in the backup branch.
+    for (const path of REMOVED_PATHS) {
+      const pathspec = path.endsWith('/') ? path.slice(0, -1) : path;
+      try {
+        git('checkout', latest, '--', pathspec);
+        restored.push(pathspec);
+      } catch {
+        // Path didn't exist in backup branch either — nothing to restore
       }
     }
 
