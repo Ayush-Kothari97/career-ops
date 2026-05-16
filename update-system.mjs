@@ -311,19 +311,21 @@ async function apply() {
     }
 
     // 3b. Remove paths that were deleted from the system layer in past versions.
+    // `git rm` already stages these deletions — do NOT push to `updated` or they
+    // will be re-passed to addPaths() below, which fails on missing paths (exit 128).
+    const removedPaths = [];
     for (const path of REMOVED_PATHS) {
       const pathspec = path.endsWith('/') ? path.slice(0, -1) : path;
       const localPath = join(ROOT, pathspec);
-      const exists = existsSync(localPath);
-      if (!exists) continue;
+      if (!existsSync(localPath)) continue;
       try {
         git('rm', '-r', '-f', '--ignore-unmatch', '--', pathspec);
-        updated.push(path);
+        removedPaths.push(pathspec);
       } catch {
         // Not tracked by git — remove from disk only
         try {
           rmSync(localPath, { recursive: true, force: true });
-          updated.push(path);
+          removedPaths.push(pathspec);
         } catch {
           // Already gone
         }
@@ -417,6 +419,7 @@ async function apply() {
 
     console.log(`\nUpdate complete: v${local} → v${remote}`);
     console.log(`Updated ${updated.length} system paths.`);
+    if (removedPaths.length > 0) console.log(`Removed ${removedPaths.length} deprecated path(s): ${removedPaths.join(', ')}`);
     console.log(`Rollback available: node update-system.mjs rollback`);
 
   } finally {
@@ -485,6 +488,17 @@ function rollback() {
           // Already gone, or not present on disk — fine.
         }
         removed.push(pathspec);
+      }
+    }
+
+    // Restore paths removed by this version if they existed in the backup branch.
+    for (const path of REMOVED_PATHS) {
+      const pathspec = path.endsWith('/') ? path.slice(0, -1) : path;
+      try {
+        git('checkout', latest, '--', pathspec);
+        restored.push(pathspec);
+      } catch {
+        // Path didn't exist in backup branch either — nothing to restore
       }
     }
 
